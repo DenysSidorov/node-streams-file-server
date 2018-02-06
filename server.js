@@ -32,14 +32,21 @@
 
 let url = require('url');
 let fs = require('fs');
+let Readable = require('stream').Readable;
+let Writeable = require('stream').Writeable;
 
-require('http').createServer(function(req, res) {
+var http = require('http');
+var server = http.createServer(app);
+server.listen(8050,function(){console.log('Server started');});
 
+function app(req, res) {
   let pathname = decodeURI(url.parse(req.url).pathname);
-
   switch(req.method) {
     case 'GET':
-      if (pathname == '/') {
+      if (pathname == '/favicon.ico'){
+        res.statusCode = 404;
+        res.end("Not exists");
+      } else if (pathname == '/') {
         // отдачу файлов следует переделать "правильно", через потоки, с нормальной обработкой ошибок
         fs.readFile(__dirname + '/public/index.html', (err, content) => {
           if (err) throw err;
@@ -48,10 +55,12 @@ require('http').createServer(function(req, res) {
       });
         return;
       }
+      else if (true/* pathname == '/' */) {
+        console.log(pathname, '222');
+      }
 
     default:
       res.statusCode = 502;
       res.end("Not implemented");
   }
-
-}).listen(3000);
+}
