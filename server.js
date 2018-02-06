@@ -30,37 +30,73 @@
 
 'use strict';
 
-let url = require('url');
-let fs = require('fs');
-let Readable = require('stream').Readable;
-let Writeable = require('stream').Writeable;
+var url = require('url');
+var fs = require('fs');
+var Readable = require('stream').Readable;
+var Writeable = require('stream').Writeable;
+// const mime = require('mime');
 
 var http = require('http');
 var server = http.createServer(app);
-server.listen(8050,function(){console.log('Server started');});
+server.listen(8050, function () {
+  console.log('Server started');
+});
+server.on('error', function() {
+  console.log('Global Server Error');
+})
 
 function app(req, res) {
   let pathname = decodeURI(url.parse(req.url).pathname);
-  switch(req.method) {
+  switch (req.method) {
     case 'GET':
-      if (pathname == '/favicon.ico'){
+      if (pathname == '/favicon.ico') {
         res.statusCode = 404;
         res.end("Not exists");
       } else if (pathname == '/') {
         // отдачу файлов следует переделать "правильно", через потоки, с нормальной обработкой ошибок
         fs.readFile(__dirname + '/public/index.html', (err, content) => {
           if (err) throw err;
-        res.setHeader('Content-Type', 'text/html;charset=utf-8');
-        res.end(content);
-      });
+          res.setHeader('Content-Type', 'text/html;charset=utf-8');
+          res.end(content);
+        });
         return;
       }
       else if (true/* pathname == '/' */) {
-        console.log(pathname, '222');
-      }
+        // todo get
+        var path = pathname.slice(1, pathname.length);
+        sendFile(path, res)
+      } break;
 
     default:
       res.statusCode = 502;
       res.end("Not implemented");
   }
+}
+
+function sendFile(filepath, res) {
+  console.log(filepath, 'URL');
+  var rStream = fs.createReadStream(__dirname + '/public/img/' + filepath);
+  rStream.pipe(res);
+
+  rStream.on('open',function () {
+    // res.setHeader('Content-Type', 'image/jpg'/*mime.lookup(filepath)*/);
+  })
+  rStream.on('error', function (er) {
+    if (er.code == 'ENOENT') {
+      console.log('Not found file');
+      res.statusCode = 404;
+      res.end('Not found');
+    } else {
+      console.log(er);
+      if(!res.headersSent){
+        res.statusCode = 500;
+        res.end('Server has problem');
+      }
+      res.end();
+    }
+  })
+
+  res.on('close', function () {
+    rStream.destroy();
+  })
 }
