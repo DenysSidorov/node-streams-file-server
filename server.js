@@ -94,7 +94,7 @@ function recieveFile(pathname, req, res) {
           res.writeHead(500, {'Connection': 'close'});
           res.write('Internal error');
         }
-        fs.unlink(filepath, err => { // eslint-disable-line
+        fs.unlink(pathname, err => { // eslint-disable-line
           /* ignore error */
           res.end();
         });
@@ -105,21 +105,22 @@ function recieveFile(pathname, req, res) {
       res.end('OK');
     })
   req.on('data', function (chunk) {
-    size = size + chunk;
+    size = size + chunk.length;
+    console.log(size);
     if (size > maxSize) {
       console.log('too big!');
       res.statusCode = 413;
       res.setHeader('Connection', 'close');
       res.end('File is too big!');
       writeStream.destroy();
-      fs.unlink(filepath, err => {
+      fs.unlink(pathname, err => {
         console.log(err);
       });
     }
   })
     .on('close', function () {
       writeStream.destroy();
-      fs.unlink(filepath, err => {
+      fs.unlink(pathname, err => {
         console.log(err);
       });
     })
