@@ -53,13 +53,15 @@ function app(req, res) {
         res.statusCode = 404;
         res.end("Not exists");
       } else if (pathname == '/') {
+        sendFile(pathname, res, true)
         // отдачу файлов следует переделать "правильно", через потоки, с нормальной обработкой ошибок
-        fs.readFile(__dirname + '/public/index.html', (err, content) => {
-          if (err) throw err;
-          res.setHeader('Content-Type', 'text/html;charset=utf-8');
-          res.end(content);
-        });
-        return;
+        // fs.readFile(__dirname + '/public/index.html', (err, content) => {
+        //   if (err) throw err;
+        //   res.setHeader('Content-Type', 'text/html;charset=utf-8');
+        //   res.end(content);
+        // });
+        // return;
+        break;
       }
       else if (true/* pathname == '/' */) {
         // todo get
@@ -73,9 +75,17 @@ function app(req, res) {
   }
 }
 
-function sendFile(filepath, res) {
+function sendFile(filepath, res, isIndex) {
   console.log(filepath, 'URL');
-  var rStream = fs.createReadStream(__dirname + '/public/img/' + filepath);
+  var path;
+  if(isIndex){
+    path = '/public/index.html'
+    res.setHeader('Content-Type', 'text/html;charset=utf-8');
+  } else {
+    res.setHeader('Content-Type', 'image/jpeg');
+    path = '/public/img/' + filepath
+  }
+  var rStream = fs.createReadStream(__dirname + path);
   rStream.pipe(res);
 
   rStream.on('open',function () {
