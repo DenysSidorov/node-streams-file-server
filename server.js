@@ -41,7 +41,7 @@ var server = http.createServer(app);
 server.listen(8050, function () {
   console.log('Server started');
 });
-server.on('error', function() {
+server.on('error', function () {
   console.log('Global Server Error');
 })
 
@@ -67,18 +67,72 @@ function app(req, res) {
         // todo get
         var path = pathname.slice(1, pathname.length);
         sendFile(path, res)
-      } break;
-
+      }
+      break;
+    case 'POST':
+      recieveFile(pathname, req, res);
+      break;
     default:
       res.statusCode = 502;
       res.end("Not implemented");
   }
 }
 
+function recieveFile(pathname, req, res) {
+  var maxSize = 10e6;
+  var size = 0;
+  console.log(pathname, 'filepath');
+  var writeStream = new fs.WriteStream(__dirname + '/public/img' + pathname, {flags: 'wx'});
+  writeStream
+    .on('error', err => {
+      if (err.code === 'EEXIST') {
+        res.statusCode = 409;
+        res.end('File exists');
+      } else {
+        console.error(err);
+        if (!res.headersSent) {
+          res.writeHead(500, {'Connection': 'close'});
+          res.write('Internal error');
+        }
+        fs.unlink(filepath, err => { // eslint-disable-line
+          /* ignore error */
+          res.end();
+        });
+      }
+
+    })
+    .on('close', function () {
+      res.end('OK');
+    })
+  req.on('data', function (chunk) {
+    size = size + chunk;
+    if (size > maxSize) {
+      console.log('too big!');
+      res.statusCode = 413;
+      res.setHeader('Connection', 'close');
+      res.end('File is too big!');
+      writeStream.destroy();
+      fs.unlink(filepath, err => {
+        console.log(err);
+      });
+    }
+  })
+    .on('close', function () {
+      writeStream.destroy();
+      fs.unlink(filepath, err => {
+        console.log(err);
+      });
+    })
+    .on('finish', function () {
+    })
+    .pipe(writeStream);
+  res.on('finish', () => console.log('finish'));
+}
+
 function sendFile(filepath, res, isIndex) {
   console.log(filepath, 'URL');
   var path;
-  if(isIndex){
+  if (isIndex) {
     path = '/public/index.html'
     res.setHeader('Content-Type', 'text/html;charset=utf-8');
   } else {
@@ -88,7 +142,7 @@ function sendFile(filepath, res, isIndex) {
   var rStream = fs.createReadStream(__dirname + path);
   rStream.pipe(res);
 
-  rStream.on('open',function () {
+  rStream.on('open', function () {
     // res.setHeader('Content-Type', 'image/jpg'/*mime.lookup(filepath)*/);
   })
   rStream.on('error', function (er) {
@@ -98,7 +152,7 @@ function sendFile(filepath, res, isIndex) {
       res.end('Not found');
     } else {
       console.log(er);
-      if(!res.headersSent){
+      if (!res.headersSent) {
         res.statusCode = 500;
         res.end('Server has problem');
       }
