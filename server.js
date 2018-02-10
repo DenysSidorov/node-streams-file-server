@@ -31,6 +31,7 @@
 'use strict';
 
 var url = require('url');
+var util = require('util');
 var fs = require('fs');
 var Readable = require('stream').Readable;
 var Writeable = require('stream').Writeable;
@@ -44,6 +45,7 @@ server.listen(8050, function () {
 server.on('error', function () {
   console.log('Global Server Error');
 })
+module.exports = server;
 
 function app(req, res) {
   let pathname = decodeURI(url.parse(req.url).pathname);
@@ -84,7 +86,6 @@ function app(req, res) {
 function recieveFile(pathname, req, res) {
   var maxSize = 10e6;
   var size = 0;
-  console.log(pathname, 'filepath');
   var writeStream = new fs.WriteStream(__dirname + '/public/img' + pathname, {flags: 'wx'});
   writeStream
     .on('error', err => {
@@ -134,7 +135,6 @@ function recieveFile(pathname, req, res) {
 }
 
 function sendFile(filepath, res, isIndex) {
-  console.log(filepath, 'URL');
   var path;
   if (isIndex) {
     path = '/public/index.html'
@@ -170,16 +170,15 @@ function sendFile(filepath, res, isIndex) {
 }
 
 function deleteFile(filepath, req, res) {
-  var  path = __dirname + '/public/img/' + filepath;
+  var path = __dirname + '/public/img/' + filepath;
   fs.unlink(path, err => {
-    if(err){
+    if (err) {
       console.log(err);
       res.statusCode = 404;
       res.end('File not exist')
-    }else{
+    } else {
       res.statusCode = 200;
       res.end('Ok')
     }
-
   });
 }
