@@ -72,6 +72,9 @@ function app(req, res) {
     case 'POST':
       recieveFile(pathname, req, res);
       break;
+    case 'DELETE':
+      deleteFile(pathname, req, res);
+      break;
     default:
       res.statusCode = 502;
       res.end("Not implemented");
@@ -164,4 +167,19 @@ function sendFile(filepath, res, isIndex) {
   res.on('close', function () {
     rStream.destroy();
   })
+}
+
+function deleteFile(filepath, req, res) {
+  var  path = __dirname + '/public/img/' + filepath;
+  fs.unlink(path, err => {
+    if(err){
+      console.log(err);
+      res.statusCode = 404;
+      res.end('File not exist')
+    }else{
+      res.statusCode = 200;
+      res.end('Ok')
+    }
+
+  });
 }
